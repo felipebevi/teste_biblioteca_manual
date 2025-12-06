@@ -20,13 +20,13 @@ O servico `web` expoe a aplicacao em http://localhost (porta 80) e o servico `db
 
 ## 3. Criar e popular as tabelas
 
-O arquivo `tabelas.sql` e montado no container do MySQL em `/tabelas.sql`. Para recriar o schema atual, use apenas este comando (utiliza o usuario root do MySQL):
+O arquivo `tabelas.sql` e montado no container do MySQL em `/tabelas.sql`. Suba os containers e importe tudo com um unico comando (usa o usuario root):
 
 ```bash
-docker compose exec db bash -c "mysql -uroot -proot biblioteca < /tabelas.sql"
+docker compose up -d && docker exec mysql_biblioteca sh -c "mysql -uroot -proot biblioteca < /tabelas.sql"
 ```
 
-Se aparecer erro de permissao, limpe dados antigos removendo o volume `mysql_data` antes de subir novamente (`rm -rf mysql_data && docker compose up -d`).
+Se der erro de autenticacao ou tabelas ausentes, limpe o volume antes de subir de novo: `rm -rf mysql_data && docker compose up -d`.
 
 ## 4. Acessar o sistema
 
