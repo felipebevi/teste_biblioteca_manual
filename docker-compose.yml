@@ -12,6 +12,8 @@ services:
       - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
+      # Deixa tabelas.sql acessivel dentro do container para facilitar a carga manual
+      - ./tabelas.sql:/tabelas.sql:ro
 
   web:
     build: .

@@ -1,6 +1,6 @@
 # Teste Biblioteca
 
-Guia rápido para preparar o ambiente PHP puro (branch `master`) usando Docker e os scripts presentes neste repositório.
+Guia rapido para preparar o ambiente PHP puro (branch `master`) usando Docker.
 
 ## 1. Clonar o projeto
 
@@ -10,23 +10,29 @@ cd teste_biblioteca_manual
 git checkout master
 ```
 
-## 2. Subir os contêineres
+## 2. Subir os containers
 
 ```bash
 docker compose up -d
 ```
 
-O serviço `web` disponibiliza a aplicação em http://localhost (porta 80) e o serviço `db` expõe o MySQL na porta 3306.
+O servico `web` expoe a aplicacao em http://localhost (porta 80) e o servico `db` expoe o MySQL na porta 3306.
 
-## 3. Criar e popular as tabelas atuais
+## 3. Criar e popular as tabelas
 
-O volume do projeto já está montado nos contêineres, então basta executar:
+O arquivo `tabelas.sql` agora e montado no container do MySQL em `/tabelas.sql`. Para recriar o schema atual, escolha um dos comandos:
+
+- Via container do Apache (usa o volume com o codigo):
 
 ```bash
-docker compose exec db bash -c "mysql -ubiblioteca -pbiblioteca biblioteca < /var/www/html/tabelas.sql"
+docker compose exec web bash -c "mysql -h db -ubiblioteca -pbiblioteca biblioteca < /var/www/html/tabelas.sql"
 ```
 
-Esse comando recria todas as tabelas e a view definidas em `tabelas.sql`, deixando o banco idêntico ao estado atual do projeto.
+- Via container do MySQL (usa o bind `/tabelas.sql`):
+
+```bash
+docker compose exec db bash -c "mysql -ubiblioteca -pbiblioteca biblioteca < /tabelas.sql"
+```
 
 ## 4. Acessar o sistema
 
@@ -36,7 +42,7 @@ Com o Docker no ar e o schema criado, abra http://localhost em seu navegador par
 
 ## Branch com testes PHPUnit (`phpunit_ia`)
 
-Caso queira validar a versão instrumentada com TDD:
+Caso queira validar a versao instrumentada com TDD:
 
 ```bash
 git fetch origin
@@ -46,4 +52,4 @@ docker compose up -d db
 DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME=biblioteca DB_USER=biblioteca DB_PASSWORD=biblioteca ./vendor/bin/phpunit --verbose
 ```
 
-O último comando executa a suíte com saída detalhada (`--verbose`). Ao finalizar, volte para a branch principal com `git checkout master`.
+O ultimo comando executa a suite com saida detalhada (`--verbose`). Ao finalizar, volte para a branch principal com `git checkout master`.
