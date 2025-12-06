@@ -6,16 +6,15 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: biblioteca
-      MYSQL_USER: user
-      MYSQL_PASSWORD: pass
+      MYSQL_USER: biblioteca
+      MYSQL_PASSWORD: biblioteca
     ports:
       - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
-    command: bash -c "docker-php-ext-install mysqli pdo_mysql && apache2-foreground"
 
   web:
-    image: php:8.2-apache
+    build: .
     container_name: php_apache
     restart: always
     ports:
