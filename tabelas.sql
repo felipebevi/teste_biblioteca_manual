@@ -35,6 +35,30 @@ CREATE TABLE Livro_Assunto (
     FOREIGN KEY (Assunto_codAs) REFERENCES Assunto(codAs) ON DELETE CASCADE
 );
 
+INSERT INTO Autor (CodAu, Nome) VALUES 
+    (1, 'Autor 1'),
+    (2, 'Autor 2');
+
+INSERT INTO Assunto (codAs, Descricao) VALUES 
+    (1, 'Romance'),
+    (2, 'Drama');
+
+INSERT INTO Livro (Codl, Titulo, Editora, Edicao, AnoPublicacao, Valor) VALUES
+    (2, 'livro 1', 'editora A', 1, '2004', 12.90),
+    (3, 'titulo 2', 'editora b', 2, '2008', 15.85),
+    (4, 'titulo livro 3', 'editora F', 29, '2025', 28.99);
+
+INSERT INTO Livro_Autor (Livro_Codl, Autor_CodAu) VALUES
+    (2, 1),
+    (4, 1),
+    (3, 2),
+    (4, 2);
+
+INSERT INTO Livro_Assunto (Livro_Codl, Assunto_codAs) VALUES
+    (2, 1),
+    (3, 2),
+    (4, 2);
+
 
 
 
