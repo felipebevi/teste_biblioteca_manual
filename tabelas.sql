@@ -34,3 +34,26 @@ CREATE TABLE Livro_Assunto (
     FOREIGN KEY (Livro_Codl) REFERENCES Livro(Codl) ON DELETE CASCADE,
     FOREIGN KEY (Assunto_codAs) REFERENCES Assunto(codAs) ON DELETE CASCADE
 );
+
+
+
+
+CREATE OR REPLACE VIEW vw_relatorio_autor_livros AS
+SELECT 
+    a.CodAu AS autor_id,
+    a.Nome AS autor,
+    COALESCE(COUNT(DISTINCT l.Codl), 0) AS quantidade_livros,
+    COALESCE(
+        GROUP_CONCAT(DISTINCT l.Titulo ORDER BY l.Titulo SEPARATOR ', '),
+        'Sem livro'
+    ) AS livros,
+    COALESCE(
+        GROUP_CONCAT(DISTINCT asu.Descricao ORDER BY asu.Descricao SEPARATOR ', '),
+        'Sem assunto'
+    ) AS assuntos
+FROM Autor a
+LEFT JOIN Livro_Autor la ON la.Autor_CodAu = a.CodAu
+LEFT JOIN Livro l ON l.Codl = la.Livro_Codl
+LEFT JOIN Livro_Assunto las ON las.Livro_Codl = l.Codl
+LEFT JOIN Assunto asu ON asu.codAs = las.Assunto_codAs
+GROUP BY a.CodAu, a.Nome;
