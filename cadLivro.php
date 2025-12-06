@@ -1,106 +1,48 @@
 <?php
 
 include_once(dirname(__FILE__) . '/db.php');
+include_once(dirname(__FILE__) . '/src/CadastroRepository.php');
 
 if(isset($_GET['acao']) && $_GET['acao'] === 'excluir' && isset($_GET['codl'])){
     $codl = intval($_GET['codl']);
-    $stmt = $conn->prepare("DELETE FROM Livro WHERE Codl = ?");
-    $stmt->bind_param("i", $codl);
-    if($stmt->execute()){
+    if(excluirLivro($conn, $codl)){
         $msg = "Livro excluído com sucesso!";
     } else {
-        $msg = "Erro ao excluir livro: " . $conn->error;
+        $msg = "Erro ao excluir livro";
     }
-    $stmt->close();
     header("Location: ?msg=" . urlencode($msg));
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $titulo = $_POST['titulo'];
-    $editora = $_POST['editora'];
-    $edicao = $_POST['edicao'];
-    $anoPublicacao = $_POST['anoPublicacao'];
-    $autores = isset($_POST['autores']) ? $_POST['autores'] : [];
-    $assuntos = isset($_POST['assuntos']) ? $_POST['assuntos'] : [];
-    $valor = isset($_POST['valor']) ? floatval(str_replace(',', '.', $_POST['valor'])) : 0;
+    $dados = [
+        'titulo' => $_POST['titulo'],
+        'editora' => $_POST['editora'] ?? null,
+        'edicao' => $_POST['edicao'] ?? null,
+        'anoPublicacao' => $_POST['anoPublicacao'] ?? null,
+        'valor' => isset($_POST['valor']) ? floatval(str_replace(',', '.', $_POST['valor'])) : 0
+    ];
+    $autores = isset($_POST['autores']) ? array_map('intval', (array)$_POST['autores']) : [];
+    $assuntos = isset($_POST['assuntos']) ? array_map('intval', (array)$_POST['assuntos']) : [];
 
     if (isset($_GET['acao']) && $_GET['acao'] === 'editar' && isset($_GET['codl'])) {
-        // Editar livro existente
         $codl = intval($_GET['codl']);
-        $stmt = $conn->prepare("UPDATE Livro SET Titulo=?, Editora=?, Edicao=?, AnoPublicacao=?, Valor=? WHERE Codl=?");
-        $stmt->bind_param("ssiidi", $titulo, $editora, $edicao, $anoPublicacao, $valor, $codl);
-        $stmt->execute();
-        $stmt->close();
-
-        // Remover autores antigos e inserir novos
-        $stmt = $conn->prepare("DELETE FROM Livro_Autor WHERE Livro_Codl=?");
-        $stmt->bind_param("i", $codl);
-        $stmt->execute();
-        $stmt->close();
-
-        foreach ($autores as $autorId) {
-            $stmt = $conn->prepare("INSERT INTO Livro_Autor (Livro_Codl, Autor_CodAu) VALUES (?, ?)");
-            $stmt->bind_param("ii", $codl, $autorId);
-            $stmt->execute();
-            $stmt->close();
+        if (atualizarLivro($conn, $codl, $dados, $autores, $assuntos)) {
+            $msg = "Livro atualizado com sucesso!";
+        } else {
+            $msg = "Erro ao atualizar livro";
         }
-
-        // Remover assuntos antigos e inserir novos
-        $stmt = $conn->prepare("DELETE FROM Livro_Assunto WHERE Livro_Codl=?");
-        $stmt->bind_param("i", $codl);
-        $stmt->execute();
-        $stmt->close();
-
-        foreach ($assuntos as $assuntoId) {
-            $stmt = $conn->prepare("INSERT INTO Livro_Assunto (Livro_Codl, Assunto_codAs) VALUES (?, ?)");
-            $stmt->bind_param("ii", $codl, $assuntoId);
-            $stmt->execute();
-            $stmt->close();
-        }
-
-        $msg = "Livro atualizado com sucesso!";
     } else {
-        // Inserir novo livro        
-        $stmt = $conn->prepare("INSERT INTO Livro (Titulo, Editora, Edicao, AnoPublicacao, Valor) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssiid", $titulo, $editora, $edicao, $anoPublicacao, $valor);
-        $stmt->execute();
-        $livroId = $stmt->insert_id;
-        $stmt->close();
-
-        foreach ($autores as $autorId) {
-            $stmt = $conn->prepare("INSERT INTO Livro_Autor (Livro_Codl, Autor_CodAu) VALUES (?, ?)");
-            $stmt->bind_param("ii", $livroId, $autorId);
-            $stmt->execute();
-            $stmt->close();
-        }
-
-        foreach ($assuntos as $assuntoId) {
-            $stmt = $conn->prepare("INSERT INTO Livro_Assunto (Livro_Codl, Assunto_codAs) VALUES (?, ?)");
-            $stmt->bind_param("ii", $livroId, $assuntoId);
-            $stmt->execute();
-            $stmt->close();
-        }
-
-        $msg = "Livro cadastrado com sucesso!";
+        $livroId = criarLivro($conn, $dados, $autores, $assuntos);
+        $msg = $livroId ? "Livro cadastrado com sucesso!" : "Erro ao cadastrar livro";
     }
     header("Location: cadLivro.php?msg=" . urlencode($msg));
     exit();
 }
 
-// Buscar autores para o select
-$autorResult = $conn->query("SELECT CodAu, Nome FROM Autor");
-$autores = [];
-while ($row = $autorResult->fetch_assoc()) {
-    $autores[] = $row;
-}   
-
-// Buscar assuntos para o select
-$assuntoResult = $conn->query("SELECT codAs, Descricao FROM Assunto");
-$assuntos = [];
-while ($row = $assuntoResult->fetch_assoc()) {
-    $assuntos[] = $row;
-}   
+// Buscar autores e assuntos para os selects
+$autores = listarAutoresDisponiveis($conn);
+$assuntos = listarAssuntosDisponiveis($conn);
 
 include_once(dirname(__FILE__) . '/header.php');
 ?>
@@ -127,30 +69,7 @@ include_once(dirname(__FILE__) . '/header.php');
             </tr>
         </thead>
         <tbody>
-            <?php
-             // query pra select nos livros porem fazendo implode por , dos autores e assuntos tratando vazio se nao existir colocando 'Sem Autor' ou 'Sem Assunto'
-
-            $sql = "SELECT 
-                        l.Codl, l.Titulo, l.Editora, l.Edicao, l.AnoPublicacao, l.Valor,
-                        IFNULL(GROUP_CONCAT(DISTINCT a.Nome SEPARATOR ', '), 'Sem Autor') AS Autores,
-                        IFNULL(GROUP_CONCAT(DISTINCT s.Descricao SEPARATOR ', '), 'Sem Assunto') AS Assuntos
-                    FROM 
-                        Livro l
-                    LEFT JOIN 
-                        Livro_Autor la ON l.Codl = la.Livro_Codl
-                    LEFT JOIN 
-                        Autor a ON la.Autor_CodAu = a.CodAu
-                    LEFT JOIN 
-                        Livro_Assunto ls ON l.Codl = ls.Livro_Codl
-                    LEFT JOIN 
-                        Assunto s ON ls.Assunto_codAs = s.codAs
-                    GROUP BY 
-                        l.Codl, l.Titulo, l.Editora, l.Edicao, l.AnoPublicacao, l.Valor
-                    ORDER BY 
-                        l.Codl ASC";
-
-            $livroResult = $conn->query($sql);
-            while ($livro = $livroResult->fetch_assoc()): ?>
+            <?php foreach (listarLivros($conn) as $livro): ?>
                 <tr>
                     <td><?php echo $livro['Codl']; ?></td>
                     <td><?php echo $livro['Titulo']; ?></td>
@@ -165,18 +84,14 @@ include_once(dirname(__FILE__) . '/header.php');
                         <a href="?acao=excluir&codl=<?php echo $livro['Codl']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir este livro?');">Excluir</a>
                     </td>
                 </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
             </tbody>
         </table>
     </div>
 
     <?php if (isset($_GET['acao']) && $_GET['acao'] === 'editar' && isset($_GET['codl'])):
         $codl = intval($_GET['codl']);
-        $stmt = $conn->prepare("SELECT * FROM Livro WHERE Codl = ?");
-        $stmt->bind_param("i", $codl);
-        $stmt->execute();
-        $livroEdicao = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        $livroEdicao = buscarLivroPorCodigo($conn, $codl);
     ?>
     <h2>Editar Livro</h2>
     <form method="POST" action="cadLivro.php?acao=editar&codl=<?php echo $codl; ?>">
@@ -200,16 +115,7 @@ include_once(dirname(__FILE__) . '/header.php');
             <label for="autores">Autores:</label>
             <select multiple class="form-control" id="autores" name="autores[]" required>
                 <?php
-                // Buscar autores associados ao livro
-                $stmt = $conn->prepare("SELECT Autor_CodAu FROM Livro_Autor WHERE Livro_Codl = ?");
-                $stmt->bind_param("i", $codl);
-                $stmt->execute();
-                $autorResult = $stmt->get_result();
-                $autorIds = [];
-                while ($row = $autorResult->fetch_assoc()) {
-                    $autorIds[] = $row['Autor_CodAu'];
-                }
-                $stmt->close();
+                $autorIds = autoresDoLivro($conn, $codl);
                 foreach ($autores as $autor): ?>
                     <option value="<?php echo $autor['CodAu']; ?>" <?php echo in_array($autor['CodAu'], $autorIds) ? 'selected' : ''; ?>>
                         <?php echo $autor['Nome']; ?>
@@ -222,16 +128,7 @@ include_once(dirname(__FILE__) . '/header.php');
             <label for="assuntos">Assuntos:</label>
             <select multiple class="form-control" id="assuntos" name="assuntos[]" required>
                 <?php
-                // Buscar assuntos associados ao livro
-                $stmt = $conn->prepare("SELECT Assunto_codAs FROM Livro_Assunto WHERE Livro_Codl = ?");
-                $stmt->bind_param("i", $codl);
-                $stmt->execute();
-                $assuntoResult = $stmt->get_result();
-                $assuntoIds = [];
-                while ($row = $assuntoResult->fetch_assoc()) {
-                    $assuntoIds[] = $row['Assunto_codAs'];
-                }
-                $stmt->close(); 
+                $assuntoIds = assuntosDoLivro($conn, $codl);
                 foreach ($assuntos as $assunto): ?>
                     <option value="<?php echo $assunto['codAs']; ?>" <?php echo in_array($assunto['codAs'], $assuntoIds) ? 'selected' : ''; ?>>
                         <?php echo $assunto['Descricao']; ?>

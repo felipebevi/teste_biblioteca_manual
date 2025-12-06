@@ -1,50 +1,41 @@
 <?php 
 
     include_once(dirname(__FILE__) . '/db.php');
+    include_once(dirname(__FILE__) . '/src/CadastroRepository.php');
 
     // Buscar assuntos atuais para exibir na tabela
-    $assuntos_atuais = [];
-    $sql = "SELECT codAs, Descricao FROM Assunto";
-    $result = $conn->query($sql);
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $assuntos_atuais[] = $row;
-        }
-    }
+    $assuntos_atuais = listarAssuntos($conn);
 
     // Processar formulários de adição, edição e exclusão
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $acao = $_POST['acao'];
         if ($acao == 'adicionar') {
-            $Descricao = $conn->real_escape_string($_POST['Descricao']);
-            $sql = "INSERT INTO Assunto (Descricao) VALUES ('$Descricao')";
-            if ($conn->query($sql) === TRUE) {
+            $Descricao = trim($_POST['Descricao']);
+            if ($Descricao !== '' && criarAssunto($conn, $Descricao)) {
                 header("Location: ?msg=Assunto adicionado com sucesso!");
                 exit();
             } else {
-                header("Location: ?msg=Erro ao adicionar assunto: " . urlencode($conn->error));
+                header("Location: ?msg=Erro ao adicionar assunto");
                 exit();
             }
         } elseif ($acao == 'editar' && isset($_POST['codAs'])) {
-            $codAs = $conn->real_escape_string($_POST['codAs']);
-            $Descricao = $conn->real_escape_string($_POST['Descricao']);
-            $sql = "UPDATE Assunto SET Descricao='$Descricao' WHERE codAs=$codAs";
-            if ($conn->query($sql) === TRUE) {
+            $codAs = (int)$_POST['codAs'];
+            $Descricao = trim($_POST['Descricao']);
+            if ($Descricao !== '' && atualizarAssunto($conn, $codAs, $Descricao)) {
                 header("Location: ?msg=Assunto atualizado com sucesso!");
                 exit();
             } else {
-                header("Location: ?msg=Erro ao atualizar assunto: " . urlencode($conn->error));
+                header("Location: ?msg=Erro ao atualizar assunto");
                 exit();
             }
         }
     } elseif (isset($_GET['acao']) && $_GET['acao'] == 'excluir' && isset($_GET['codAs'])) {
-        $codAs = $conn->real_escape_string($_GET['codAs']);
-        $sql = "DELETE FROM Assunto WHERE codAs=$codAs";
-        if ($conn->query($sql) === TRUE) {
+        $codAs = (int)$_GET['codAs'];
+        if (excluirAssunto($conn, $codAs)) {
             header("Location: ?msg=Assunto excluído com sucesso!");
             exit();
         } else {
-            header("Location: ?msg=Erro ao excluir assunto: " . urlencode($conn->error));
+            header("Location: ?msg=Erro ao excluir assunto");
             exit();
         }
     }
@@ -79,12 +70,10 @@
 
 <?php
     if(isset($_GET['acao']) && $_GET['acao']=='editar' && isset($_GET['codAs'])){
-        $codAs=$conn->real_escape_string($_GET['codAs']);
-        $sql="SELECT Descricao FROM Assunto WHERE codAs=$codAs";
-        $result=$conn->query($sql);
-        if($result->num_rows==1){
-            $row=$result->fetch_assoc();
-            $descricao_atual=$row['Descricao'];
+        $codAs=(int)$_GET['codAs'];
+        $assunto = buscarAssuntoPorCodigo($conn, $codAs);
+        if($assunto){
+            $descricao_atual=$assunto['Descricao'];
         } else {
             echo "<div class='alert alert-danger msg-alerta' role='alert'>Assunto não encontrado para edição.</div>";
             $codAs=null;

@@ -1,49 +1,39 @@
 <?php
 
     include_once(dirname(__FILE__) . '/db.php');
+    include_once(dirname(__FILE__) . '/src/CadastroRepository.php');
 
-    $autores_atuais=array();
-    // busca todos os autores cadastrados
-    $sql="SELECT * FROM Autor";
-    $resultado=$conn->query($sql);;
-    if($resultado->num_rows>0){
-        while($row=$resultado->fetch_assoc()){
-            $autores_atuais[]=$row;
-        }
-    }
+    $autores_atuais = listarAutores($conn);
 
     // verifica se existe acoes de adicionar, editar ou excluir e prepara mensagem no bootstrap
     if(isset($_GET['acao'])){
         $acao=$_GET['acao'];
         if($acao=='adicionar' && $_SERVER['REQUEST_METHOD']=='POST'){
-            $nome=$conn->real_escape_string($_POST['Nome']);
-            $sql="INSERT INTO Autor (Nome) VALUES ('$nome')";
-            if($conn->query($sql)===TRUE){
+            $nome=trim($_POST['Nome']);
+            if($nome !== '' && criarAutor($conn, $nome)){
                 header("Location: ?msg=Autor adicionado com sucesso!");
                 exit();
             } else {
-                header("Location: ?msg=Erro ao adicionar autor: " . urlencode($conn->error));
+                header("Location: ?msg=Erro ao adicionar autor");
                 exit();
             }
         } elseif($acao=='editar' && isset($_GET['CodAu']) && $_SERVER['REQUEST_METHOD']=='POST'){
-            $CodAu=$conn->real_escape_string($_GET['CodAu']);
-            $nome=$conn->real_escape_string($_POST['Nome']);
-            $sql="UPDATE Autor SET Nome='$nome' WHERE CodAu=$CodAu";
-            if($conn->query($sql)===TRUE){
+            $CodAu=(int)$_GET['CodAu'];
+            $nome=trim($_POST['Nome']);
+            if($nome !== '' && atualizarAutor($conn, $CodAu, $nome)){
                 header("Location: ?msg=Autor atualizado com sucesso!");
                 exit();
             } else {
-                header("Location: ?msg=Erro ao atualizar autor: " . urlencode($conn->error));
+                header("Location: ?msg=Erro ao atualizar autor");
                 exit();
             }
         } elseif($acao=='excluir' && isset($_GET['CodAu'])){
-            $CodAu=$conn->real_escape_string($_GET['CodAu']);
-            $sql="DELETE FROM Autor WHERE CodAu=$CodAu";
-            if($conn->query($sql)===TRUE){
+            $CodAu=(int)$_GET['CodAu'];
+            if(excluirAutor($conn, $CodAu)){
                 header("Location: ?msg=Autor excluído com sucesso!");
                 exit();
             } else {
-                header("Location: ?msg=Erro ao excluir autor: " . urlencode($conn->error));
+                header("Location: ?msg=Erro ao excluir autor");
                 exit();
             }
         }
@@ -90,11 +80,9 @@
 <?php
 // eu poderia usar o mesmo form cheio de ternario para tratar edicao e inclusao, mas separei pra manter simples
 if(isset($_GET['acao']) && $_GET['acao']=='editar' && isset($_GET['CodAu'])){
-    $CodAu_editar=$conn->real_escape_string($_GET['CodAu']);
-    $sql="SELECT * FROM Autor WHERE CodAu=$CodAu_editar";
-    $resultado=$conn->query($sql);
-    if($resultado->num_rows==1){
-        $autor_editar=$resultado->fetch_assoc();
+    $CodAu_editar=(int)$_GET['CodAu'];
+    $autor_editar=buscarAutorPorCodigo($conn, $CodAu_editar);
+    if($autor_editar){
         ?>
         <form method="POST" action="?acao=editar&CodAu=<?php echo urlencode($autor_editar['CodAu']); ?>">
             <div class="mb-3">
