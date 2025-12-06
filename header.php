@@ -33,3 +33,6 @@
     <hr>
 
     <div class="container">
+<?php
+// Conexão com o banco de dados
+include_once(dirname(__FILE__) . '/db.php');

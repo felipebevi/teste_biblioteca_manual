@@ -22,6 +22,13 @@ $(document).ready(function() {
             $('a.nav-link[href="/relatorios.php"]').addClass("active");
             break;
     }
+
+    // faz o alerta de mensagem desaparecer depois de 5 segundos apenas se ela existir
+    if ($('.msg-alerta').length) {
+        setTimeout(function() {
+            $('.msg-alerta').fadeOut('slow');
+        }, 5000);
+    }
 });
 
 
