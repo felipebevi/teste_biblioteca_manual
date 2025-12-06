@@ -2,6 +2,20 @@
 
 include_once(dirname(__FILE__) . '/db.php');
 
+if(isset($_GET['acao']) && $_GET['acao'] === 'excluir' && isset($_GET['codl'])){
+    $codl = intval($_GET['codl']);
+    $stmt = $conn->prepare("DELETE FROM Livro WHERE Codl = ?");
+    $stmt->bind_param("i", $codl);
+    if($stmt->execute()){
+        $msg = "Livro excluído com sucesso!";
+    } else {
+        $msg = "Erro ao excluir livro: " . $conn->error;
+    }
+    $stmt->close();
+    header("Location: ?msg=" . urlencode($msg));
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo = $_POST['titulo'];
     $editora = $_POST['editora'];
@@ -15,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Editar livro existente
         $codl = intval($_GET['codl']);
         $stmt = $conn->prepare("UPDATE Livro SET Titulo=?, Editora=?, Edicao=?, AnoPublicacao=?, Valor=? WHERE Codl=?");
-        $stmt->bind_param("ssisdi", $titulo, $editora, $edicao, $anoPublicacao, $valor, $codl);
+        $stmt->bind_param("ssiidi", $titulo, $editora, $edicao, $anoPublicacao, $valor, $codl);
         $stmt->execute();
         $stmt->close();
 
@@ -47,9 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $msg = "Livro atualizado com sucesso!";
     } else {
-        // Inserir novo livro
+        // Inserir novo livro        
         $stmt = $conn->prepare("INSERT INTO Livro (Titulo, Editora, Edicao, AnoPublicacao, Valor) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssisi", $titulo, $editora, $edicao, $anoPublicacao, $valor);
+        $stmt->bind_param("ssiid", $titulo, $editora, $edicao, $anoPublicacao, $valor);
         $stmt->execute();
         $livroId = $stmt->insert_id;
         $stmt->close();
@@ -148,7 +162,7 @@ include_once(dirname(__FILE__) . '/header.php');
                     <td><?php echo $livro['Assuntos']; ?></td>
                     <td>
                         <a href="?acao=editar&codl=<?php echo $livro['Codl']; ?>" class="btn btn-sm btn-primary">Editar</a>
-                        <a href="?acao=excluir&codl=<?php echo $livro['Codl']; ?>" class="btn btn-sm btn-danger">Excluir</a>
+                        <a href="?acao=excluir&codl=<?php echo $livro['Codl']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir este livro?');">Excluir</a>
                     </td>
                 </tr>
             <?php endwhile; ?>
@@ -182,11 +196,6 @@ include_once(dirname(__FILE__) . '/header.php');
             <label for="anoPublicacao">Ano de Publicação:</label>
             <input type="text" class="form-control" id="anoPublicacao" name="anoPublicacao" value="<?php echo $livroEdicao['AnoPublicacao']; ?>" maxlength="4">
         </div>
-        <div class="form-group">
-            <label for="valor">Valor:</label>
-            <input type="text" class="form-control" id="valor" name="valor" value="<?php echo $livroEdicao['Valor']; ?>">
-        </div>
-        
         <div class="form-group">
             <label for="autores">Autores:</label>
             <select multiple class="form-control" id="autores" name="autores[]" required>
@@ -230,6 +239,11 @@ include_once(dirname(__FILE__) . '/header.php');
                 <?php endforeach; ?>
             </select>
         </div>
+        <div class="form-group">
+            <label for="valor">Valor:</label>
+            <input type="text" class="form-control" id="valor" name="valor" value="<?php echo $livroEdicao['Valor']; ?>">
+        </div>
+        
         <button type="submit" class="btn btn-primary">Atualizar Livro</button>
     </form>
     <hr>
@@ -268,6 +282,10 @@ include_once(dirname(__FILE__) . '/header.php');
                     <option value="<?php echo $assunto['codAs']; ?>"><?php echo $assunto['Descricao']; ?></option>
                 <?php endforeach; ?>
             </select>
+        </div>
+        <div class="form-group">
+            <label for="valor">Valor:</label>
+            <input type="number" step="0.01" class="form-control" id="valor" name="valor">
         </div>
         <button type="submit" class="btn btn-primary">Cadastrar Livro</button>
     </form>
