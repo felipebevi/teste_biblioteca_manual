@@ -12,8 +12,13 @@ services:
       - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
-      # Deixa tabelas.sql acessivel dentro do container para facilitar a carga manual
-      - ./tabelas.sql:/tabelas.sql:ro
+      # Importa tabelas.sql automaticamente no primeiro start (quando o volume de dados estiver limpo)
+      - ./tabelas.sql:/docker-entrypoint-initdb.d/01_tabelas.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   web:
     build: .
@@ -24,4 +29,5 @@ services:
     volumes:
       - ./:/var/www/html
     depends_on:
-      - db
+      db:
+        condition: service_healthy
