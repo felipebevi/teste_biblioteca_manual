@@ -79,6 +79,42 @@ if(isset($_GET['export']) && $_GET['export'] == 'pdf'){
 
 <h1> Relatórios </h1>
 <h3>Para gerar PDF, use: <a href='?export=pdf' target="_blank">Exportar PDF - /?export=pdf</a></h3>
+<hr>
+<h2> Relatório de Autores e Livros usando a VIEW: vw_relatorio_autor_livros </h2>
+<!-- tabela com os dados da view vw_relatorio_autor_livros usando bootstrap listrada -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Autor</th>
+            <th>Qtd Livros</th>
+            <th>Livros</th>
+            <th>Assuntos</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php
+        $sql = "SELECT autor, quantidade_livros, livros, assuntos 
+            FROM vw_relatorio_autor_livros
+            ORDER BY autor";
+        $res = $conn->query($sql);
+
+        if ($res->num_rows > 0) {
+            while ($row = $res->fetch_assoc()) {
+                echo "<tr>";
+                echo "<td>" . htmlspecialchars($row['autor']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['quantidade_livros']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['livros']) . "</td>";
+                echo "<td>" . htmlspecialchars($row['assuntos']) . "</td>";
+                echo "</tr>";
+            }
+        } else {
+            echo "<tr><td colspan='4'>Nenhum registro encontrado</td></tr>";
+        }
+
+        $conn->close();
+        ?>
+    </tbody>
+</table>
 
 <?php
     include_once(dirname(__FILE__) . '/footer.php');
