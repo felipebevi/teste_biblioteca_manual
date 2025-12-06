@@ -11,7 +11,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
       # Importa tabelas.sql automaticamente no primeiro start (quando o volume de dados estiver limpo)
       - ./tabelas.sql:/docker-entrypoint-initdb.d/01_tabelas.sql:ro
     healthcheck:
@@ -31,3 +31,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  mysql_data:

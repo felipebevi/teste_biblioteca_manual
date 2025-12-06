@@ -23,7 +23,7 @@ O servico `web` expoe a aplicacao em http://localhost (porta 80) e o servico `db
 O arquivo `tabelas.sql` e executado automaticamente pelo MySQL no primeiro start (esta montado em `docker-entrypoint-initdb.d`). Para uma carga limpa do schema/dados, use apenas este comando:
 
 ```bash
-rm -rf mysql_data && docker compose up -d
+docker compose down -v && docker compose up -d
 ```
 
 O `db` so fica saudavel depois que o MySQL termina de iniciar e rodar o script; aguarde alguns segundos. Para conferir se as tabelas foram criadas:
