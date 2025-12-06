@@ -20,7 +20,7 @@ O servico `web` expoe a aplicacao em http://localhost (porta 80) e o servico `db
 
 ## 3. Criar e popular as tabelas
 
-O arquivo `tabelas.sql` e executado automaticamente pelo MySQL no primeiro start (esta montado em `docker-entrypoint-initdb.d`). Para uma carga limpa do schema/dados, use apenas este comando:
+O arquivo `tabelas.sql` e executado automaticamente pelo MySQL no primeiro start (esta montado em `docker-entrypoint-initdb.d`).  Pode ignorar este passo se desejar.  Para uma carga limpa do schema/dados, use apenas este comando:
 
 ```bash
 docker compose down -v && docker compose up -d
@@ -45,11 +45,11 @@ Com o Docker no ar e o schema criado, abra http://localhost em seu navegador par
 Caso queira validar a versao instrumentada com TDD:
 
 ```bash
-git fetch origin
 git checkout phpunit_ia
 composer install
 docker compose up -d db
-DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME=biblioteca DB_USER=biblioteca DB_PASSWORD=biblioteca ./vendor/bin/phpunit --verbose
+DB_HOST=127.0.0.1 DB_PORT=3306 DB_NAME=biblioteca DB_USER=biblioteca DB_PASSWORD=biblioteca ./vendor/bin/phpunit --testdox
+
 ```
 
-O ultimo comando executa a suite com saida detalhada (`--verbose`). Ao finalizar, volte para a branch principal com `git checkout master`.
+O ultimo comando executa a suite com saida detalhada (`--testdox`). Ao finalizar, volte para a branch principal com `git checkout master`.
